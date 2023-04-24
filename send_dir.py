@@ -69,6 +69,6 @@ if __name__ == '__main__':
         process_files(folder_path)
 
         end_time = datetime.now()
-        print("Started at: ", start
+        print("Started at: ", start_time)
         print("Ended at: ", end_time)
         print("Elapsed time: ", end_time - start_time)
