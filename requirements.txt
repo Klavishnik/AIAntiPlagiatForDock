@@ -2,5 +2,5 @@ python-docx==0.8.11
 textract==1.6.5
 requests==2.28.2
 times==0.7
-openai_detector
-argparse
+openai_detector==0.1.2
+argparse==1.4.0
