@@ -1,5 +1,9 @@
 # AIAntiPlagiatForDock
 
+## Для чего?
+Ищет текст, сгенерированный ИИ, в папке с документами формата .doc(x)
+
+### Начало
 Рекомендовано работать в контейнере, но не обязательно. 
 Запускаем скрипт сборки и настройки окружения.
 Зависимости ставятся в вирутальные переменные.
@@ -16,7 +20,7 @@ venv root#
 
 Теперь можно использовать скрипты. 
 
-Самый важный скрипт - **all.py**.
+Самый важный скрипт - **checkAIGenerateText.py**.
 
 Ему передается целевая папка ` target_dir `, где лежат файлы формата .doc(x), которые нужно проверить.
 
@@ -31,23 +35,68 @@ venv root#
 *Немного может влиять на точность*
 
 Для использования рекомендована **classificator**, поскольку выше точность и скрость. 
-Для её использования нужно получить ключ авторизации от open.ai и изменить переменную  **bearer_token** (строка 16)
+
+``` !!!Для её использования нужно получить ключ авторизации от open.ai и изменить переменную  bearer_token (строка 16) ```
+
 Как это сделать смотррите тут
 https://github.com/promptslab/openai-detector
 
 Пример запуска
 ```
-python all.py -gpt2 -classificator -o out.txt target_dir/
+python checkAIGenerateText.py -gpt2 -classificator -o out.txt target_dir/
 ```
 Такой запуск будет содержать ошибки о неудачных попытках отправки данных на сайт. 
 Если хотите их избежать или перенаправить в файл, используйте поток ошибок
 
 Пример запуска
 ```
-python all.py -gpt2 -classificator -o out.txt target_dir/ 2> /dev/null
+python checkAIGenerateText.py -gpt2 -classificator -o out.txt target_dir/ 2> /dev/null
 ```
 
 ## От автора
+
+### Пример вывода программы
+```
+
+   Name: 2023_asp_refphil_LeshevSV_020301_22_A22_501_UtkinMA_VisualizationFil.docx 
+---------------------------------------------------------------------------- 
+ ----- ChatGPT 2.0 ----- 
+ File: 0, Fake probability: 86.6% 
+File: 1, Fake probability: 98.6% 
+File: 2, Fake probability: 99.6% 
+File: 3, Fake probability: 97.9% 
+File: 4, Fake probability: 98.8% 
+File: 5, Fake probability: 78.7% 
+File: 6, Fake probability: 96.3% 
+File: 7, Fake probability: 97.6% 
+File: 8, Fake probability: 91.1% 
+File: 9, Fake probability: 93.7% 
+
+ ---> avg_fake_probability: 94.0 	 not_loaded_files: 0 
+----- AI Text Classifier ----- 
+ Pprobability: 85.61134299461072 
+ Class: unlikely 
+ Pprobability: 98.28689412532744 
+ Class: possibly 
+ Pprobability: 96.86604367264252 
+ Class: unclear if it is 
+ Pprobability: 98.52267847361583 
+ Class: possibly 
+ Pprobability: 98.92245327954687 
+ Class: possibly 
+ Pprobability: 98.54683594431548 
+ Class: possibly 
+ Pprobability: 97.3247073920071 
+ Class: unclear if it is 
+ Pprobability: 99.35944841471745 
+ Class: likely 
+ 
+ ---> Average fake probability: 96.7%
+ ---> AI GENERATE!
+
+
+
+```
 
 Ввиду ограничений в работе веб сайтов весть файл скормить им не получается. 
 Приходится делить на небольшие куски и загружать отдельно. 
