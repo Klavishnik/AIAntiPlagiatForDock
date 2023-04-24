@@ -88,12 +88,12 @@ def process_files_gpt2(my_all_words):
 
     if fake_probabilities:
         avg_fake_probability = round(sum(fake_probabilities) / len(fake_probabilities), 1)
-        print(f"\nAverage fake probability: {avg_fake_probability}% \n")
+        print(f"\n ---> Average fake probability: {avg_fake_probability}% \n")
     else:
         print("\nNo valid results were obtained.", file=sys.stderr)
     
     with open(f"{args.output}", "a") as f:
-            f.write(f"\n avg_fake_probability: {avg_fake_probability} \t not_loaded_files: {not_loaded_files} \n")
+            f.write(f"\n ---> avg_fake_probability: {avg_fake_probability} \t not_loaded_files: {not_loaded_files} \n")
     return not_loaded_files
 
 
