@@ -4,9 +4,21 @@ import textract
 import requests
 import json
 import time
+import argparse
 
 from docx import Document
 from datetime import datetime
+from detector import OpenaiDetector
+
+bearer_token = 'Bearer sess-9M7JhYUz9nz9Z7N6c6YADSOVFQsY1MaqrhazGSUK'
+
+##Пороги срабатывания у классификатора
+mark_detect_ai_possible = 75
+mark_detect_ai_generate = 96
+
+#Сколько слов будет в каждом куске файла при разбиении
+num_words_split_gpt2  = 300
+num_words_split_class = 800
 
 def extract_text_from_docx(docx_path):
     document = Document(docx_path)
@@ -17,7 +29,7 @@ def extract_text_from_doc(doc_path):
     text = textract.process(doc_path).decode('utf-8')
     return text
 
-def save_text_to_txt(text, max_words=300):
+def save_text_to_txt(text, max_words):
     words = text.split()
     file_number = 1
     all_words = []
@@ -26,7 +38,7 @@ def save_text_to_txt(text, max_words=300):
     return all_words
 
 
-def send_to_api(content, retries=1, delay=1):
+def send_to_api(content, retries=10, delay=1):
     url = 'https://openai-openai-detector.hf.space/'
     headers = {'Content-Type': 'application/json'}
     data = json.dumps({'text': content})
@@ -56,7 +68,7 @@ def send_to_api(content, retries=1, delay=1):
 
     return None, None
 
-def process_files(my_all_words):
+def process_files_gpt2(my_all_words):
     fake_probabilities = []
     not_loaded_files = 0
     for i in range(len(my_all_words)-1):
@@ -64,6 +76,8 @@ def process_files(my_all_words):
         if response is not None and result is not None:
             fake_probability = round(result.get('fake_probability', 0) * 100, 1)
             print(f"File: {i}, Fake probability: {fake_probability}%")
+            with open(f"{args.output}", "a") as f:
+                f.write(f"File: {i}, Fake probability: {fake_probability}% \n")
             fake_probabilities.append(fake_probability)
         else:
             print(f"File: {i}, NOT LOAD")
@@ -71,14 +85,51 @@ def process_files(my_all_words):
 
     if fake_probabilities:
         avg_fake_probability = round(sum(fake_probabilities) / len(fake_probabilities), 1)
-        print(f"\nAverage fake probability: {avg_fake_probability}%")
+        print(f"\nAverage fake probability: {avg_fake_probability}% \n")
     else:
         print("\nNo valid results were obtained.", file=sys.stderr)
     
-    with open("out.txt", "a") as f:
-            f.write(f"avg_fake_probability: {avg_fake_probability} \t not_loaded_files: {not_loaded_files} \n")
+    with open(f"{args.output}", "a") as f:
+            f.write(f"\n avg_fake_probability: {avg_fake_probability} \t not_loaded_files: {not_loaded_files} \n")
     return not_loaded_files
 
+
+def process_files_class(my_all_words):
+    fake_probabilities = []
+    od = OpenaiDetector(bearer_token)
+    for i in range(len(my_all_words)-1):
+        response = od.detect(my_all_words[i])
+        probability = response["AI-Generated Probability"]
+        conclusion = response["Class"]
+        fake_probabilities.append(probability)
+        
+        with open(f"{args.output}", "a") as f:
+            f.write(f"Pprobability: {probability} \n ")
+            f.write(f"Class: {conclusion} \n ")
+
+        print(f"Pprobability: {probability}")
+        print(f"Class: {conclusion}")
+
+    if fake_probabilities:
+            avg_fake_probability = round(sum(fake_probabilities) / len(fake_probabilities), 1)
+            print(f"\n ---> Average fake probability: {avg_fake_probability}%")
+            with open(f"{args.output}", "a") as f:
+                f.write(f"\n ---> Average fake probability: {avg_fake_probability}%")
+            
+            if (avg_fake_probability > mark_detect_ai_generate):
+                print(f"\n ---> AI GENERATE!!!!")
+                with open(f"{args.output}", "a") as f:
+                    f.write(f"\n ---> AI GENERATE!")
+
+            elif (avg_fake_probability > mark_detect_ai_possible):
+                print(f"\n ---> AI generation possible!")
+                with open(f"{args.output}", "a") as f:
+                    f.write(f"\n ---> AI generation possible!")
+        
+           
+            
+
+    
 
 def main(input_path):
     _, file_extension = os.path.splitext(input_path)
@@ -90,24 +141,52 @@ def main(input_path):
         print("Unsupported file format. Please provide a .doc or .docx file.")
         return
 
-    return save_text_to_txt(text)
+    return (text)
 
 
 if __name__ == '__main__':
-    if len(sys.argv) != 2:
-        print("Usage: python extract_text.py input.doc(x)")
-        sys.exit(0)
+  
+    parser = argparse.ArgumentParser(description="Chec AI generated text")
+    parser.add_argument("-gpt2", action="store_true", help="Using GPT-2")
+    parser.add_argument("-classificator", action="store_true", help="Using classifiacator")
+    parser.add_argument("-o", "--output", required=True, type=str, help="output file")
+    parser.add_argument("target_dir", type=str, help="target dir with .doc(x) files")
+   
+    args = parser.parse_args()
 
-    folder_path=str(sys.argv[1])
-    files = [f for f in os.listdir(folder_path) if os.path.isfile(os.path.join(folder_path, f))]
-    for file in files:
-        name=file.split("_")[-2]
-        group=file.split("_")[-4]+" "+ file.split("_")[-3]
-
-        with open("out.txt", "a") as f:
-            f.write(f"Name: {name} \t Group: {group} \t ")
-
-        all_words = main(folder_path + "/" + file)
-        not_loaded_files = process_files(all_words)
+    files = [f for f in os.listdir(args.target_dir) if os.path.isfile(os.path.join(args.target_dir, f))]
     
+    for file in files:
+        print(f"   Name: {file} ")
+        print(f"----------------------------------------------------------------------------")
+        with open(f"{args.output}", "a") as f:
+            f.write(f"   Name: {file} \n")
+            f.write(f"---------------------------------------------------------------------------- \n ")
+        
 
+        all_words = main(args.target_dir + "/" + file)
+
+        if args.gpt2:
+            splitted_words_gpt2 = save_text_to_txt(all_words, num_words_split_gpt2)
+            print(f"----- ChatGPT 2.0 ----- ")
+            with open(f"{args.output}", "a") as f:
+                f.write(f"----- ChatGPT 2.0 ----- \n ")
+            process_files_gpt2(splitted_words_gpt2)
+
+        if args.classificator:
+            splitted_words_class = save_text_to_txt(all_words, num_words_split_class)
+            print(f"----- AI Text Classifier ----- ")
+            with open(f"{args.output}", "a") as f:
+                f.write(f"----- AI Text Classifier ----- \n ")      
+            process_files_class(splitted_words_class)
+
+        print("\n\n")
+        with open(f"{args.output}", "a") as f:
+            f.write("\n\n\n")
+        
+        
+        
+   
+        
+
+        
