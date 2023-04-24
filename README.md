@@ -58,7 +58,7 @@ python checkAIGenerateText.py -gpt2 -classificator -o out.txt target_dir/ 2> /de
 ### Пример вывода программы
 ```
 
-   Name: 2023_asp_refphil_LeshevSV_020301_22_A22_501_UtkinMA_VisualizationFil.docx 
+   Name: diplom.docx 
 ---------------------------------------------------------------------------- 
  ----- ChatGPT 2.0 ----- 
  File: 0, Fake probability: 86.6% 
@@ -93,8 +93,6 @@ File: 9, Fake probability: 93.7%
  
  ---> Average fake probability: 96.7%
  ---> AI GENERATE!
-
-
 
 ```
 
