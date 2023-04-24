@@ -10,7 +10,10 @@ from docx import Document
 from datetime import datetime
 from detector import OpenaiDetector
 
-bearer_token = 'Bearer sess-9M7JhYUz9nz9Z7N6c6YADSOVFQsY1MaqrhazGSUK'
+#PUT UOR TOKEN
+#HOW?
+#https://github.com/promptslab/openai-detector
+bearer_token = 'Bearer ---'
 
 ##Пороги срабатывания у классификатора
 mark_detect_ai_possible = 75
@@ -126,11 +129,6 @@ def process_files_class(my_all_words):
                 with open(f"{args.output}", "a") as f:
                     f.write(f"\n ---> AI generation possible!")
         
-           
-            
-
-    
-
 def main(input_path):
     _, file_extension = os.path.splitext(input_path)
     if file_extension.lower() == ".docx":
