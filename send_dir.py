@@ -36,6 +36,7 @@ def send_to_api(content, retries=10, delay=1):
         if attempt < retries - 1:
             print(f"Retrying... (attempt {attempt + 2}/{retries})", file=sys.stderr)
             time.sleep(delay)
+        
 
     return None, None
 
@@ -52,6 +53,8 @@ def process_files(folder_path):
             fake_probability = round(result.get('fake_probability', 0) * 100, 1)
             print(f"File: {file}, Fake probability: {fake_probability}%")
             fake_probabilities.append(fake_probability)
+        else:
+            print(f"File: {file}, NOT LOAD")
 
     if fake_probabilities:
         avg_fake_probability = round(sum(fake_probabilities) / len(fake_probabilities), 1)
