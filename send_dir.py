@@ -2,12 +2,15 @@ import os
 import requests
 import json
 import time
+import sys
+
+from datetime import datetime
 
 def read_file_content(file_path):
     with open(file_path, 'r', encoding='utf-8') as file:
         return file.read()
 
-def send_to_api(content, retries=10, delay=5):
+def send_to_api(content, retries=10, delay=1):
     url = 'https://openai-openai-detector.hf.space/'
     headers = {'Content-Type': 'application/json'}
     data = json.dumps({'text': content})
@@ -22,16 +25,16 @@ def send_to_api(content, retries=10, delay=5):
                     result = response.json()
                     return response, result
                 except json.JSONDecodeError:
-                    print("Error: The API response is not valid JSON.")
-                    print(response.text)
+                    print("Error: The API response is not valid JSON.", file=sys.stderr)
+                    print(response.text, file=sys.stderr)
                     break
             else:
-                print("Error: The API response is empty.")
+                print("Error: The API response is empty.", file=sys.stderr)
         else:
-            print(f"Error: {response.status_code} - {response.text}")
+            print(f"Error: {response.status_code} - {response.text}", file=sys.stderr)
 
         if attempt < retries - 1:
-            print(f"Retrying... (attempt {attempt + 2}/{retries})")
+            print(f"Retrying... (attempt {attempt + 2}/{retries})", file=sys.stderr)
             time.sleep(delay)
 
     return None, None
@@ -54,12 +57,18 @@ def process_files(folder_path):
         avg_fake_probability = round(sum(fake_probabilities) / len(fake_probabilities), 1)
         print(f"\nAverage fake probability: {avg_fake_probability}%")
     else:
-        print("\nNo valid results were obtained.")
+        print("\nNo valid results were obtained.", file=sys.stderr)
 
 if __name__ == '__main__':
-    import sys
     if len(sys.argv) != 2:
-        print("Usage: python send_to_api.py folder_path")
+        print("Usage: python send_to_api.py folder_path", file=sys.stderr)
     else:
+        start_time = datetime.now()
+        print("Started at: ", start_time)
         folder_path = sys.argv[1]
         process_files(folder_path)
+
+        end_time = datetime.now()
+        print("Started at: ", start
+        print("Ended at: ", end_time)
+        print("Elapsed time: ", end_time - start_time)
