@@ -1,3 +1,4 @@
 # ignore test dir
-test_dir/
-venv
+test/
+venv/
+*.txt

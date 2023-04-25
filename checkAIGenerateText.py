@@ -5,6 +5,7 @@ import requests
 import json
 import time
 import argparse
+import math
 
 from docx import Document
 from datetime import datetime
@@ -13,7 +14,7 @@ from detector import OpenaiDetector
 #PUT UOR TOKEN
 #HOW?
 #https://github.com/promptslab/openai-detector
-bearer_token = 'Bearer ---'
+bearer_token = 
 
 ##Пороги срабатывания у классификатора
 mark_detect_ai_possible = 75
@@ -128,6 +129,28 @@ def process_files_class(my_all_words):
                 print(f"\n ---> AI generation possible!")
                 with open(f"{args.output}", "a") as f:
                     f.write(f"\n ---> AI generation possible!")
+
+def calculate_entropy(text):
+    if not text:
+        return 0
+
+    # Подсчитайте количество символов в тексте
+    char_counts = {}
+    for char in text:
+        if char in char_counts:
+            char_counts[char] += 1
+        else:
+            char_counts[char] = 1
+
+    # Вычислите вероятности появления каждого символа
+    char_probs = [count / len(text) for count in char_counts.values()]
+
+    # Используйте формулу Шеннона для расчета энтропии
+    entropy = -sum(p * math.log2(p) for p in char_probs)
+
+    return entropy
+
+
         
 def main(input_path):
     _, file_extension = os.path.splitext(input_path)
@@ -147,6 +170,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(description="Chec AI generated text")
     parser.add_argument("-gpt2", action="store_true", help="Using GPT-2")
     parser.add_argument("-classificator", action="store_true", help="Using classifiacator")
+    parser.add_argument("-entropy", action="store_true", help="Calculate entropy of text")
     parser.add_argument("-o", "--output", required=True, type=str, help="output file")
     parser.add_argument("target_dir", type=str, help="target dir with .doc(x) files")
    
@@ -155,14 +179,24 @@ if __name__ == '__main__':
     files = [f for f in os.listdir(args.target_dir) if os.path.isfile(os.path.join(args.target_dir, f))]
     
     for file in files:
+
+        if not args.entropy and not args.gpt2 and not args.classificator:
+            print("System check AI not set!")
+            sys.exit()
+
         print(f"   Name: {file} ")
         print(f"----------------------------------------------------------------------------")
         with open(f"{args.output}", "a") as f:
             f.write(f"   Name: {file} \n")
             f.write(f"---------------------------------------------------------------------------- \n ")
-        
-
-        all_words = main(args.target_dir + "/" + file)
+                
+        if args.entropy:
+            all_words = main(args.target_dir + "/" + file)
+            print(f"----- Entropy ----- ")
+            entropy = calculate_entropy(all_words)
+            print(f"Entropy: {entropy}")
+            with open(f"{args.output}", "a") as f:
+                f.write(f"----- ChatGPT 2.0 ----- \n ")
 
         if args.gpt2:
             splitted_words_gpt2 = save_text_to_txt(all_words, num_words_split_gpt2)
@@ -178,6 +212,7 @@ if __name__ == '__main__':
                 f.write(f"----- AI Text Classifier ----- \n ")      
             process_files_class(splitted_words_class)
 
+        
         print("\n\n")
         with open(f"{args.output}", "a") as f:
             f.write("\n\n\n")

@@ -2,7 +2,8 @@
 # run with sudo
 # Check if virtualenv is installed
 apt update
-apt install -y python3 python3-dev pip libxml2-dev libxslt1-dev antiword unrtf poppler-utils pstotext tesseract-ocr flac ffmpeg lame libmad0 libsox-fmt-mp3 sox libjpeg-dev swig
+apt install -y python3 python3-dev pip libxml2-dev libxslt1-dev antiword unrtf poppler-utils pstotext tesseract-ocr flac ffmpeg lame libmad0 libsox-fmt-mp3 sox libjpeg-dev swig libpulse-dev
+               
 
 if ! command -v virtualenv &> /dev/null
 then
