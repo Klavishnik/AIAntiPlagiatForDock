@@ -30,8 +30,8 @@ mark_detect_ai_generate = 96
 #Сколько слов будет в каждом куске файла при разбиении
 num_words_split_gpt2  = 300
 num_words_split_class = 800
-num_words_roberta_base = 45
-num_words_roberta_large = 45
+num_words_roberta_base = 46
+num_words_roberta_large = 46
 
 def extract_text_from_docx(docx_path):
     document = Document(docx_path)
@@ -272,68 +272,75 @@ if __name__ == '__main__':
     files = [f for f in os.listdir(args.target_dir) if os.path.isfile(os.path.join(args.target_dir, f))]
     
     for file in files:
+        try:
+            all_words = main(args.target_dir + "/" + file)
+            json_data = {"Name": file}
+                    
+            print(f"   Name: {file} ")
+            print(f"----------------------------------------------------------------------------")
 
-        all_words = main(args.target_dir + "/" + file)
-        json_data = {"Name": file}
-                
-        print(f"   Name: {file} ")
-        print(f"----------------------------------------------------------------------------")
+            if args.roberta_base: 
+                try:
+                    detector_base = pipeline(
+                        "text-classification",
+                        model="roberta-base-openai-detector",
+                        tokenizer="roberta-base-openai-detector"
+                    )   
+                    print(f"----- Roberta Base ----- ")
+                    splitted_words_roberta_base = save_text_to_txt(all_words, num_words_roberta_base)
+                    data_class = process_files_roberta_base(splitted_words_roberta_base)
+                    json_data.update(data_class)  
+                except:
+                    print("Error")
 
-        if args.roberta_base: 
-            detector_base = pipeline(
-                "text-classification",
-                model="roberta-base-openai-detector",
-                tokenizer="roberta-base-openai-detector"
-            )   
-            print(f"----- Roberta Base ----- ")
-            splitted_words_roberta_base = save_text_to_txt(all_words, num_words_roberta_base)
-            data_class = process_files_roberta_base(splitted_words_roberta_base)
-            json_data.update(data_class)  
+            if args.roberta_large: 
+                try:
+                    detector_large = pipeline(
+                        "text-classification",
+                        model="roberta-large-openai-detector",
+                        tokenizer="roberta-large-openai-detector"
+                    )   
+                    print(f"----- Roberta Large ----- ")
+                    splitted_words_roberta_large = save_text_to_txt(all_words, num_words_roberta_large)
+                    data_class = process_files_roberta_large(splitted_words_roberta_large)
+                    json_data.update(data_class)  
+                except:
+                    print("Error")
 
 
-        if args.roberta_large: 
-            detector_large = pipeline(
-                "text-classification",
-                model="roberta-large-openai-detector",
-                tokenizer="roberta-large-openai-detector"
-            )   
-            print(f"----- Roberta Large ----- ")
-            splitted_words_roberta_large = save_text_to_txt(all_words, num_words_roberta_large)
-            data_class = process_files_roberta_large(splitted_words_roberta_large)
-            json_data.update(data_class)  
+            if args.gpt2:
+                splitted_words_gpt2 = save_text_to_txt(all_words, num_words_split_gpt2)
+                print(f"----- ChatGPT 2.0 ----- ")
+                process_files_gpt2(splitted_words_gpt2)
+                #json_data.update(data_class)
 
-
-        if args.gpt2:
-            splitted_words_gpt2 = save_text_to_txt(all_words, num_words_split_gpt2)
-            print(f"----- ChatGPT 2.0 ----- ")
-            process_files_gpt2(splitted_words_gpt2)
-            #json_data.update(data_class)
-
-        if args.classificator:
-            splitted_words_class = save_text_to_txt(all_words, num_words_split_class)
-            print(f"----- AI Text Classifier ----- ")
-            data_class = process_files_class(splitted_words_class)
-            json_data.update(data_class)
-        
-        if args.entropy:
-            print(f"----- Entropy ----- ")
-            entropy = calculate_entropy(all_words)
-            print(f"Entropy: {entropy}")
-            json_data["Entropy"] = entropy
-            json_data.update(data_class)
-
-        if args.output: 
-            capitals_json = json.dumps(json_data)
-            with open(args.output, "a") as my_file:
-                my_file.write(capitals_json)
-                my_file.write("\n")
+            if args.classificator:
+                splitted_words_class = save_text_to_txt(all_words, num_words_split_class)
+                print(f"----- AI Text Classifier ----- ")
+                data_class = process_files_class(splitted_words_class)
+                json_data.update(data_class)
             
-        print("\n\n")
-        
-        
-        
-        
-   
-        
+            if args.entropy:
+                print(f"----- Entropy ----- ")
+                entropy = calculate_entropy(all_words)
+                print(f"Entropy: {entropy}")
+                json_data["Entropy"] = entropy
+                json_data.update(data_class)
+
+            if args.output: 
+                with open(args.output, "a") as my_file:
+                    json.dump(json_data, my_file, indent=4)
+                    my_file.write("\n")
+
+            print("\n\n")
+        except:
+            print("Error")
+
+            
+            
+            
+            
+    
+            
 
         
