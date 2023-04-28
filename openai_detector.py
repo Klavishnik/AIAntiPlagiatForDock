@@ -23,7 +23,7 @@ class OpenaiDetector:
             'sec-ch-ua-platform': '"macOS"',
         }
 
-        self.possible_classes = ['very unlikely', 'unlikely', 'unclear if it is', 'possibly', 'likely']
+        self.possible_classes = ['very unlikely', 'unlikely', 'possibly', 'likely', 'very likely']
         self.class_max = [10, 45, 90, 98, 99]
 
     def get_class_label(self, key_prob):

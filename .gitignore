@@ -9,3 +9,4 @@ generated_2023
 2022
 *.out
 *.log
+__pycache__
