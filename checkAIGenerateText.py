@@ -8,6 +8,7 @@ import argparse
 import math
 import logging
 import os
+import pandas as pd
 
 from openai_detector import OpenaiDetector
 
@@ -260,7 +261,8 @@ if __name__ == '__main__':
     parser.add_argument("-entropy", action="store_true", help="Calculate entropy of text")
     parser.add_argument("-roberta_base", action="store_true", help="Using roberta base model")
     parser.add_argument("-roberta_large", action="store_true", help="Using roberta large model")
-    parser.add_argument("-o", "--output", required=False, type=str, help="output file")
+    parser.add_argument("--output_json", required=False, type=str, help="output file to JSON")
+    parser.add_argument("--output_exel", required=False, type=str, help="output file to TABLE")
     parser.add_argument("target_dir", type=str, help="target dir with .doc(x) files")
    
     args = parser.parse_args()
@@ -270,11 +272,13 @@ if __name__ == '__main__':
         sys.exit()
             
     files = [f for f in os.listdir(args.target_dir) if os.path.isfile(os.path.join(args.target_dir, f))]
-    
-    for file in files:
+    json_data = []
+
+    for i, file in enumerate(files):
         try:
             all_words = main(args.target_dir + "/" + file)
-            json_data = {"Name": file}
+
+            file_data = {"Name": file}
                     
             print(f"   Name: {file} ")
             print(f"----------------------------------------------------------------------------")
@@ -289,7 +293,7 @@ if __name__ == '__main__':
                     print(f"----- Roberta Base ----- ")
                     splitted_words_roberta_base = save_text_to_txt(all_words, num_words_roberta_base)
                     data_class = process_files_roberta_base(splitted_words_roberta_base)
-                    json_data.update(data_class)  
+                    file_data.update(data_class)
                 except:
                     print("Error")
 
@@ -303,37 +307,47 @@ if __name__ == '__main__':
                     print(f"----- Roberta Large ----- ")
                     splitted_words_roberta_large = save_text_to_txt(all_words, num_words_roberta_large)
                     data_class = process_files_roberta_large(splitted_words_roberta_large)
-                    json_data.update(data_class)  
+                    file_data.update(data_class)
                 except:
                     print("Error")
 
-
+            #Не работает
             if args.gpt2:
                 splitted_words_gpt2 = save_text_to_txt(all_words, num_words_split_gpt2)
                 print(f"----- ChatGPT 2.0 ----- ")
                 process_files_gpt2(splitted_words_gpt2)
                 #json_data.update(data_class)
+            
             if args.entropy:
                 print(f"----- Entropy ----- ")
                 entropy = calculate_entropy(all_words)
                 print(f"Entropy: {entropy}")
-                json_data["Entropy"] = entropy
-                json_data.update(data_class)
+                file_data["Entropy"] = entropy
+                
 
             if args.classificator:
                 splitted_words_class = save_text_to_txt(all_words, num_words_split_class)
                 print(f"----- AI Text Classifier ----- ")
                 data_class = process_files_class(splitted_words_class)
-                json_data.update(data_class)
+                file_data.update(data_class)
             
-            if args.output: 
-                with open(args.output, "a") as my_file:
-                    json.dump(json_data, my_file, indent=4)
-                    my_file.write("\n")
-
-            print("\n\n")
+            json_data.append(file_data)
         except:
             print("Error")
+
+            print("\n\n")
+
+    
+    if args.output_json: 
+        with open(args.output_json, "a") as my_file:
+            json.dump(json_data, my_file, indent=4)
+            my_file.write("\n")
+
+    if args.output_exel: 
+        data = pd.DataFrame(json_data)
+        data.to_excel(args.output_exel, index=False)
+
+
 
             
             

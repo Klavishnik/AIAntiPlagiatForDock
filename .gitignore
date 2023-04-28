@@ -1,5 +1,6 @@
 # ignore test dir
 test/
+Test/
 venv/
 *.json
 log.txt
