@@ -30,9 +30,9 @@ mark_detect_ai_generate = 96
 
 #Сколько слов будет в каждом куске файла при разбиении
 num_words_split_gpt2  = 300
-num_words_split_class = 800
-num_words_roberta_base = 20
-num_words_roberta_large = 20
+num_words_split_class = 300
+num_words_roberta_base = 25
+num_words_roberta_large = 25
 
 def extract_text_from_docx(docx_path):
     document = Document(docx_path)
@@ -88,8 +88,6 @@ def process_files_gpt2(my_all_words):
         if response is not None and result is not None:
             fake_probability = round(result.get('fake_probability', 0) * 100, 1)
             print(f"File: {i}, Fake probability: {fake_probability}%")
-            with open(f"{args.output}", "a") as f:
-                f.write(f"File: {i}, Fake probability: {fake_probability}% \n")
             fake_probabilities.append(fake_probability)
         else:
             print(f"File: {i}, NOT LOAD")
@@ -101,11 +99,20 @@ def process_files_gpt2(my_all_words):
     else:
         print("\nNo valid results were obtained.", file=sys.stderr)
     
-    with open(f"{args.output}", "a") as f:
-            f.write(f"\n ---> avg_fake_probability: {avg_fake_probability} \t not_loaded_files: {not_loaded_files} \n")
-    return not_loaded_files
+    result_dict = {
+        "GPT2 avg FAKE prob": avg_fake_probability,
+        "Not laoded files": not_loaded_files
+    }
 
+    return result_dict
 
+def classify_text_roberta_base(text):
+    results = detector_base(text)
+    return results
+
+def classify_text_roberta_large(text):
+    results = detector_large(text)
+    return results
 
 def process_files_class(my_all_words):
     fake_probabilities = []
@@ -141,13 +148,6 @@ def process_files_class(my_all_words):
 
     return response_dict
 
-def classify_text_roberta_base(text):
-    results = detector_base(text)
-    return results
-
-def classify_text_roberta_large(text):
-    results = detector_large(text)
-    return results
 
 def process_files_roberta_base(my_all_words):   
     num_reals = 0 
@@ -275,7 +275,7 @@ if __name__ == '__main__':
     json_data = []
 
     for i, file in enumerate(files):
-        try:
+        #try:
             all_words = main(args.target_dir + "/" + file)
 
             file_data = {"Name": file}
@@ -284,39 +284,39 @@ if __name__ == '__main__':
             print(f"----------------------------------------------------------------------------")
 
             if args.roberta_base: 
-                try:
+                #try:
                     detector_base = pipeline(
                         "text-classification",
                         model="roberta-base-openai-detector",
-                        tokenizer="roberta-base-openai-detector"
+                        tokenizer="roberta-base-openai-detector",
                     )   
                     print(f"----- Roberta Base ----- ")
                     splitted_words_roberta_base = save_text_to_txt(all_words, num_words_roberta_base)
                     data_class = process_files_roberta_base(splitted_words_roberta_base)
                     file_data.update(data_class)
-                except:
-                    print("Error")
+                #except:
+                    #print("Error")
 
             if args.roberta_large: 
-                try:
+                #try:
                     detector_large = pipeline(
                         "text-classification",
                         model="roberta-large-openai-detector",
-                        tokenizer="roberta-large-openai-detector"
+                        tokenizer="roberta-large-openai-detector",
                     )   
                     print(f"----- Roberta Large ----- ")
                     splitted_words_roberta_large = save_text_to_txt(all_words, num_words_roberta_large)
                     data_class = process_files_roberta_large(splitted_words_roberta_large)
                     file_data.update(data_class)
-                except:
-                    print("Error")
+              #  except:
+              #      print("Error")
 
             #Не работает
             if args.gpt2:
                 splitted_words_gpt2 = save_text_to_txt(all_words, num_words_split_gpt2)
                 print(f"----- ChatGPT 2.0 ----- ")
-                process_files_gpt2(splitted_words_gpt2)
-                #json_data.update(data_class)
+                data_class = process_files_gpt2(splitted_words_gpt2)
+                file_data.update(data_class)
             
             if args.entropy:
                 print(f"----- Entropy ----- ")
@@ -332,8 +332,8 @@ if __name__ == '__main__':
                 file_data.update(data_class)
             
             json_data.append(file_data)
-        except:
-            print("Error")
+        #except:
+         #   print("Error")
 
             print("\n\n")
 
