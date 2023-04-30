@@ -16,7 +16,15 @@ def combine_json_elements(file1, file2, output_file):
         data2 = json.load(f2)
 
     if isinstance(data1, list) and isinstance(data2, list):
-        combined_data = [merge_dicts(d1, d2) for d1, d2 in zip(data1, data2)]
+        combined_data = data2.copy()
+
+        for d1 in data1:
+            for index, d2 in enumerate(combined_data):
+                if d2["Name"] == d1["Name"]:
+                    combined_data[index] = merge_dicts(d2, d1)
+                    break
+            else:
+                combined_data.append(d1)
     else:
         print("Error: Both JSON files should have a list structure.")
         return
@@ -24,6 +32,7 @@ def combine_json_elements(file1, file2, output_file):
     # Save combined data to the output file
     with open(output_file, 'w') as outfile:
         json.dump(combined_data, outfile, indent=2)
+
 
 def merge_json_files(file1, file2, output_file):
     with open(file1, 'r') as f1, open(file2, 'r') as f2:

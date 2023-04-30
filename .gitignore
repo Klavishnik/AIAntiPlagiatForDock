@@ -13,3 +13,4 @@ generated_2023
 *.out
 *.log
 __pycache__
+last_pat/
