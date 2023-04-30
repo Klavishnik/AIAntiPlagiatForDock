@@ -52,7 +52,7 @@ def save_text_to_txt(text, max_words):
     return all_words
 
 
-def send_to_api_gpt2(content, retries=10, delay=1):
+def send_to_api_gpt2(content, retries=12, delay=1):
     url = 'https://openai-openai-detector.hf.space/'
     headers = {'Content-Type': 'application/json'}
     data = json.dumps({'text': content})
@@ -239,7 +239,6 @@ def calculate_entropy(text):
     return entropy
 
 
-        
 def main(input_path):
     _, file_extension = os.path.splitext(input_path)
     if file_extension.lower() == ".docx":
@@ -275,16 +274,15 @@ if __name__ == '__main__':
     json_data = []
 
     for i, file in enumerate(files):
-        #try:
+        try:
             all_words = main(args.target_dir + "/" + file)
-
             file_data = {"Name": file}
                     
             print(f"   Name: {file} ")
             print(f"----------------------------------------------------------------------------")
 
             if args.roberta_base: 
-                #try:
+                try:
                     detector_base = pipeline(
                         "text-classification",
                         model="roberta-base-openai-detector",
@@ -294,11 +292,11 @@ if __name__ == '__main__':
                     splitted_words_roberta_base = save_text_to_txt(all_words, num_words_roberta_base)
                     data_class = process_files_roberta_base(splitted_words_roberta_base)
                     file_data.update(data_class)
-                #except:
-                    #print("Error")
+                except:
+                    print("Error BASE")
 
             if args.roberta_large: 
-                #try:
+                try:
                     detector_large = pipeline(
                         "text-classification",
                         model="roberta-large-openai-detector",
@@ -308,10 +306,10 @@ if __name__ == '__main__':
                     splitted_words_roberta_large = save_text_to_txt(all_words, num_words_roberta_large)
                     data_class = process_files_roberta_large(splitted_words_roberta_large)
                     file_data.update(data_class)
-              #  except:
-              #      print("Error")
+                except:
+                    print("Error LARGE")
 
-            #Не работает
+            
             if args.gpt2:
                 splitted_words_gpt2 = save_text_to_txt(all_words, num_words_split_gpt2)
                 print(f"----- ChatGPT 2.0 ----- ")
@@ -332,8 +330,8 @@ if __name__ == '__main__':
                 file_data.update(data_class)
             
             json_data.append(file_data)
-        #except:
-         #   print("Error")
+        except:
+            print(f"Error open file: {file}")
 
             print("\n\n")
 
