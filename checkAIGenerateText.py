@@ -111,19 +111,29 @@ def save_text_to_txt(text, max_words):
 def process_file_open_ai(my_all_words):
     fake_probabilities = []
     od = OpenaiDetector(bearer_token)
-    
+    max_retries = 5
+
     for i in range(len(my_all_words)-1):
         response = od.detect(my_all_words[i])
-        if response is not None:
-            try:
-                probability = response["AI-Generated Probability"]
-                conclusion = response["Class"]
-                fake_probabilities.append(probability)
-    
-                print(f"Pprobability: {probability}")
-                print(f"Class: {conclusion}")
-            except:
-                printf("Error: Open-AI response bad")
+        retry_count = 0
+        while retry_count < max_retries:
+            response = od.detect(my_all_words[i])
+            if response is not None:
+                try:
+                    probability = response["AI-Generated Probability"]
+                    conclusion = response["Class"]
+                    fake_probabilities.append(probability)
+
+                    print(f"[{i}] Probability: {probability}")
+                    print(f"[{i}] Class: {conclusion}")
+                    break  # Break the retry loop on successful request
+                except Exception as e:  # Catch the exception and print it
+                    print(f"Error: Open-AI response bad. Exception: {e}")
+                    print(f"Retry {retry_count}")
+                    retry_count += 1  # Increment the retry count
+            else:
+                retry_count += 1
+
 
     if fake_probabilities:
             avg_fake_probability = round(sum(fake_probabilities) / len(fake_probabilities), 1)
@@ -164,7 +174,7 @@ def main(file_path):
     json_data = []
 
     for i, file in enumerate(files):
-        try:
+       # try:
             file_data = {"Name": file}        
             print(f"   Name: {file} ")
             print(f"----------------------------------------------------------------------------")
@@ -227,8 +237,8 @@ def main(file_path):
 
 
             json_data.append(file_data)
-        except:
-            print(f"Error open file: {file}")
+#        except:
+ #           print(f"Error open file: {file}")
 
             print("\n\n")
 
