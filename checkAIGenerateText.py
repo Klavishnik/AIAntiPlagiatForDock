@@ -12,41 +12,33 @@ from openai_detector import OpenaiDetector
 import json
 import pandas as pd
 import pdfplumber
-
+from docx import Document
 
 
 
 
 def parse_contents_referat(file_path):
     file_extension = os.path.splitext(file_path)[1]
+    text = ""
 
     try:
         if '.docx' in file_extension:
-            # Используем python-docx для работы с содержимым документа
-            doc = Document(file_path)
-            text = ''
-
-            # Объединяем параграфы с каждой страницы начиная с третьей и заканчивая предпоследней
-            for i, section in enumerate(doc.sections):
-                # Убираем первые две страницы и последние две страницы
-                if i > 1 and i < len(doc.sections) - 2:
-                    for paragraph in section.paragraphs:
-                        text += paragraph.text + '\n'
-
+            text = docx2txt.process(file_path)
         elif '.doc' in file_extension:
             text = textract.process(file_path, extension='doc').decode()
-
-            # Определить, как разбить текст на страницы для .doc файлов зависит от специфики вашего документа.
-            # Возможно, вам придется использовать специальные разделители или вручную указать количества символов на странице.
-            # Здесь приведен пример удаления первых и последних двух страниц, предполагая что разделитель - двойной перенос строки:
-            pages = text.split('\n\n')
-            text = '\n\n'.join(pages[2:-2])
-
-        return text
     except Exception as e:
-        print(f"Ошибка при обработке файла {file_path}: {e}")
-        return None
+        print(f"Error processing file {file_path}: {e}")
+        return ""
 
+    # Удаляем первые N и последние M строк
+    lines = text.splitlines()
+    N = 22  # количество строк для удаления в начале
+    M = 22  # количество строк для удаления в конце
+
+    if len(lines) > N + M:
+        text = '\n'.join(lines[N:-M])
+    
+    return text
 
 def parse_contents(file_path):
     file_extension = os.path.splitext(file_path)[1]
@@ -73,7 +65,7 @@ def parse_contents(file_path):
     except Exception as e:
         print(e)
         return None
-
+    
     return text
 
 def classify_text(text, classifier):
@@ -122,12 +114,15 @@ def process_file_open_ai(my_all_words):
     for i in range(len(my_all_words)-1):
         response = od.detect(my_all_words[i])
         if response is not None:
-            probability = response["AI-Generated Probability"]
-            conclusion = response["Class"]
-            fake_probabilities.append(probability)
-   
-            print(f"Pprobability: {probability}")
-            print(f"Class: {conclusion}")
+            try:
+                probability = response["AI-Generated Probability"]
+                conclusion = response["Class"]
+                fake_probabilities.append(probability)
+    
+                print(f"Pprobability: {probability}")
+                print(f"Class: {conclusion}")
+            except:
+                printf("Open-AI response bad")
 
     if fake_probabilities:
             avg_fake_probability = round(sum(fake_probabilities) / len(fake_probabilities), 1)
@@ -194,7 +189,7 @@ def main(file_path):
                 except:
                     print("Error BASE")
             
-            if args.roberta_base: 
+            if args.roberta_large: 
                 try:
                     real_score, fake_score = process_text_with_model(text, model_large_path)
                     result_dict = {
@@ -257,7 +252,7 @@ if __name__ == '__main__':
     parser.add_argument("-words", action="store_true", help="Counter words in documnet (with --referat retun less value")
     parser.add_argument("--output_json", required=False, type=str, help="output file to JSON")
     parser.add_argument("--output_exel", required=False, type=str, help="output file to TABLE")
-    parser.add_argument("--referat", required=False, type=str, help="Delete TWO FIRST and TWO LAST pages")
+    parser.add_argument("-referat", action="store_true", help="Delete TWO FIRST and TWO LAST pages")
     parser.add_argument("target_dir", type=str, help="target dir with .doc(x) files")
 
     args = parser.parse_args()
