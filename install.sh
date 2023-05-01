@@ -23,23 +23,23 @@ echo "Installation complete. To activate the virtual environment, run 'source ve
 
 
 mkdir tmp roberta-base-openai-detector roberta-large-openai-detector
+cd tmp
+git clone  https://huggingface.co/roberta-large-openai-detector tmp/
+git clone  https://huggingface.co/roberta-base-openai-detector tmp/
+cd ..
 
-git clone https://huggingface.co/roberta-large-openai-detector
-git clone https://huggingface.co/roberta-base-openai-detector
+cp tmp/roberta-base-openai-detector/config.json roberta-base-openai-detector
+cp tmp/roberta-base-openai-detector/merges.txt roberta-base-openai-detector
+cp tmp/roberta-base-openai-detector/pytorch_model.bin roberta-base-openai-detector
+cp tmp/roberta-base-openai-detector/tokenizer.json roberta-base-openai-detector
+cp tmp/roberta-base-openai-detector/vocab.json roberta-base-openai-detector
 
 
-cp tmp/roberta-base-openai-detector/config.json /roberta-base-openai-detector
-cp tmp/roberta-base-openai-detector/merges.txt /roberta-base-openai-detector
-cp tmp/roberta-base-openai-detector/pytorch_model.bin /roberta-base-openai-detector
-cp tmp/roberta-base-openai-detector/tokenizer.json /roberta-base-openai-detector
-cp tmp/roberta-base-openai-detector/vocab.json /roberta-base-openai-detector
-
-
-cp tmp/roberta-large-openai-detector/config.json /roberta-large-openai-detector
-cp tmp/roberta-large-openai-detector/merges.txt /roberta-large-openai-detector
-cp tmp/roberta-large-openai-detector/pytorch_model.bin /roberta-large-openai-detector
-cp tmp/roberta-large-openai-detector/tokenizer.json /roberta-large-openai-detector
-cp tmp/roberta-large-openai-detector/vocab.json /roberta-large-openai-detector
+cp tmp/roberta-large-openai-detector/config.json roberta-large-openai-detector
+cp tmp/roberta-large-openai-detector/merges.txt roberta-large-openai-detector
+cp tmp/roberta-large-openai-detector/pytorch_model.bin roberta-large-openai-detector
+cp tmp/roberta-large-openai-detector/tokenizer.json roberta-large-openai-detector
+cp tmp/roberta-large-openai-detector/vocab.json roberta-large-openai-detector
 
 rm -rf tmp
 

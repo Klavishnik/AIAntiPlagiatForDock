@@ -17,6 +17,7 @@ from docx import Document
 
 
 
+
 def parse_contents_referat(file_path):
     file_extension = os.path.splitext(file_path)[1]
     text = ""
@@ -122,7 +123,7 @@ def process_file_open_ai(my_all_words):
                 print(f"Pprobability: {probability}")
                 print(f"Class: {conclusion}")
             except:
-                printf("Open-AI response bad")
+                printf("Error: Open-AI response bad")
 
     if fake_probabilities:
             avg_fake_probability = round(sum(fake_probabilities) / len(fake_probabilities), 1)
