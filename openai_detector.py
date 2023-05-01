@@ -49,18 +49,39 @@ class OpenaiDetector:
             'model': 'model-detect-v2',
         }
 
-        response = requests.post('https://api.openai.com/v1/completions', headers=self.header, json=data)
-        if response.status_code == 200:
+        try:
+            response = requests.post('https://api.openai.com/v1/completions', headers=self.header, json=data)
+            response.raise_for_status()
+        except requests.exceptions.RequestException as e:
+            return f"Error during request: {str(e)}"
+
+        try:
             choices = response.json()['choices'][0]
             logprobs = choices['logprobs']['top_logprobs'][0]
             probs = {key: 100 * np.e ** value for key, value in logprobs.items()}
-            if '"' in probs:
-                key_prob = probs['"']
+            key_prob = probs.get('"', 0)  # Set a default value for key_prob
             class_label = self.get_class_label(key_prob)
             top_prob = {'Class': class_label, 'AI-Generated Probability': key_prob}
             if all_probs:
                 return probs, top_prob
             return top_prob
-        return "Check prompt, Length of sentence it should be more than 1,000 characters"
+        except Exception as e:
+            return f"Error during processing: {str(e)}"
+            
 
-        
+
+
+
+            # response = requests.post('https://api.openai.com/v1/completions', headers=self.header, json=data)
+        # if response.status_code == 200:
+        #     choices = response.json()['choices'][0]
+        #     logprobs = choices['logprobs']['top_logprobs'][0]
+        #     probs = {key: 100 * np.e ** value for key, value in logprobs.items()}
+        #     if '"' in probs:
+        #         key_prob = probs['"']
+        #     class_label = self.get_class_label(key_prob)
+        #     top_prob = {'Class': class_label, 'AI-Generated Probability': key_prob}
+        #     if all_probs:
+        #         return probs, top_prob
+        #     return top_prob
+        # return "Check prompt, Length of sentence it should be more than 1,000 characters"

@@ -3,6 +3,7 @@ import io
 import docx2txt
 import PyPDF2
 import os
+import sys
 import textract
 from transformers import AutoTokenizer, AutoModelForSequenceClassification, pipeline, logging
 import argparse
@@ -128,8 +129,8 @@ def process_file_open_ai(my_all_words):
                     print(f"[{i}] Class: {conclusion}")
                     break  # Break the retry loop on successful request
                 except Exception as e:  # Catch the exception and print it
-                    print(f"Error: Open-AI response bad. Exception: {e}")
-                    print(f"Retry {retry_count}")
+                    print(f"Error: Open-AI response bad. Exception: {e}" , file=sys.stderr)
+                    print(f"Retry {retry_count}" , file=sys.stderr)
                     retry_count += 1  # Increment the retry count
             else:
                 retry_count += 1
