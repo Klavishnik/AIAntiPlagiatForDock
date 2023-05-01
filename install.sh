@@ -20,4 +20,14 @@ source venv/bin/activate
 pip install -r requirements.txt
 
 echo "Installation complete. To activate the virtual environment, run 'source venv/bin/activate'"
+
+
+git clone https://huggingface.co/roberta-large-openai-detector
+cd roberta-large-openai-detector/ 
+rm -rf flax_model.msgpack .git*  README.md vocab.json
+
+git clone https://huggingface.co/roberta-base-openai-detector
+cd roberta-base-openai-detector/ 
+rm -rf flax_model.msgpack .git*  README.md vocab.json
+
 #source venv/bin/activate

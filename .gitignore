@@ -1,16 +1,13 @@
 # ignore test dir
 test/
-Test/
+
 env/
 venv/
 *.json
-log.txt
-out.txt
-lol
-generated_2023
-2023
-2022
 *.out
 *.log
 __pycache__
-last_pat/
+
+
+roberta-base-openai-detector/
+roberta-large-openai-detector
