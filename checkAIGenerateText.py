@@ -9,13 +9,14 @@ from transformers import AutoTokenizer, AutoModelForSequenceClassification, pipe
 import argparse
 import tempfile
 import math
+import time
 from openai_detector import OpenaiDetector
 import json
 import pandas as pd
 import pdfplumber
 from docx import Document
 
-
+from googletrans import Translator
 
 
 
@@ -109,45 +110,42 @@ def save_text_to_txt(text, max_words):
     return all_words
 
  
-def process_file_open_ai(my_all_words):
+def process_file_open_ai(my_all_words, lang):
     fake_probabilities = []
     od = OpenaiDetector(bearer_token)
     max_retries = 5
 
-    for i in range(len(my_all_words)-1):
-        response = od.detect(my_all_words[i])
+    for i in range(len(my_all_words) - 1):
         retry_count = 0
         while retry_count < max_retries:
             response = od.detect(my_all_words[i])
             if response is not None:
-                try:
-                    probability = response["AI-Generated Probability"]
-                    conclusion = response["Class"]
-                    fake_probabilities.append(probability)
+                probability = response["AI-Generated Probability"]
+                conclusion = response["Class"]
+                fake_probabilities.append(probability)
 
-                    print(f"[{i}] Probability: {probability}")
-                    print(f"[{i}] Class: {conclusion}")
-                    break  # Break the retry loop on successful request
-                except Exception as e:  # Catch the exception and print it
-                    print(f"Error: Open-AI response bad. Exception: {e}" , file=sys.stderr)
-                    print(f"Retry {retry_count}" , file=sys.stderr)
-                    retry_count += 1  # Increment the retry count
+                print(f"[{i}] Probability: {probability}")
+                print(f"[{i}] Class: {conclusion}")
+                break  # Break the retry loop on successful request
             else:
-                retry_count += 1
-
+                print(f"Error: Open-AI response bad.", file=sys.stderr)
+                print(f"Retry {retry_count}", file=sys.stderr)
+                retry_count += 1  # Increment the retry count
 
     if fake_probabilities:
-            avg_fake_probability = round(sum(fake_probabilities) / len(fake_probabilities), 1)
-            avg_conclusion = od.get_class_label(avg_fake_probability)
+        avg_fake_probability = round(sum(fake_probabilities) / len(fake_probabilities), 1)
+        avg_conclusion = od.get_class_label(avg_fake_probability)
 
-            response_dict = {
-            "OpenAI Average Probability":  avg_fake_probability,
-            "OpenAI Class": avg_conclusion
-            }
+        response_dict = {
+            f"{lang} OpenAI Average Probability": avg_fake_probability,
+            f"{lang} OpenAI Class": avg_conclusion
+        }
 
-            print(f"\n---> Average fake probability: {avg_fake_probability}%")
-            print(f"---> Average fake class: {avg_conclusion}")
+        print(f"\n---> Average fake probability: {avg_fake_probability}%")
+        print(f"---> Average fake class: {avg_conclusion}")
+
     return response_dict
+
 
 def count_words(text):
     words = text.split()
@@ -167,6 +165,45 @@ def calculate_entropy(text):
 
     return entropy
 
+
+#--------test
+def translate_text(text, src_language, target_language):
+    translator = Translator()
+    translated = translator.translate(text, src=src_language, dest=target_language)
+    return translated.text
+
+def split_text(text, max_chunk_size):
+    # Разбиение текста на абзацы
+    paragraphs = text.split('\n')
+
+    # Разбиение абзацев на части, размер которых не превышает max_chunk_size
+    chunks = []
+    current_chunk = ''
+    for paragraph in paragraphs:
+        if len(current_chunk) + len(paragraph) <= max_chunk_size:
+            current_chunk += paragraph + '\n'
+        else:
+            chunks.append(current_chunk)
+            current_chunk = paragraph + '\n'
+
+    if current_chunk:
+        chunks.append(current_chunk)
+
+    return chunks
+
+def translate_chunks(chunks, src_language, target_language):
+    translated_chunks = []
+
+    for chunk in chunks:
+        translated_chunk = translate_text(chunk, src_language, target_language)
+        translated_chunks.append(translated_chunk)
+
+    return translated_chunks
+
+def join_translated_chunks(translated_chunks):
+    return '\n'.join(translated_chunks)
+
+
 def main(file_path):
     model_base_path = "./roberta-base-openai-detector/"
     model_large_path = "./roberta-large-openai-detector/"
@@ -175,73 +212,146 @@ def main(file_path):
     json_data = []
 
     for i, file in enumerate(files):
-       # try:
+        try:
             file_data = {"Name": file}        
             print(f"   Name: {file} ")
             print(f"----------------------------------------------------------------------------")
 
+            #Если формат реферата, то обрезаем первую и последнюю страницу
             if args.referat: 
                 text = parse_contents_referat(args.target_dir + "/" + file)
             else: 
                 text = parse_contents(args.target_dir + "/" + file)
+
+            if 'ru' in args.lang:
+                if args.roberta_base: 
+                    try:
+                        real_score, fake_score = process_text_with_model(text, model_base_path)
+                        result_dict = {
+                            'Roberta Base fake': fake_score,
+                            'Roberta Base real': real_score
+                        }
+                        file_data.update(result_dict)
+
+                        print(f"----- Roberta Base ----- ")
+                        print(f" Roberta Base fake: {fake_score}")
+                        print(f" Roberta Base real: {real_score}")
+
+                    except:
+                        print("Error BASE")
+                
+                if args.roberta_large: 
+                    try:
+                        real_score, fake_score = process_text_with_model(text, model_large_path)
+                        result_dict = {
+                            'Roberta Large fake': fake_score,
+                            'Roberta Large real': real_score
+                        }
+                        file_data.update(result_dict)
+
+                        print(f"----- Roberta Large ----- ")
+                        print(f" Roberta Large fake: {fake_score}")
+                        print(f" Roberta Large real: {real_score}")
+
+                    except:
+                        print("Error LARGE")
+
+                if args.entropy:
+                    print(f"----- Entropy ----- ")
+                    entropy = calculate_entropy(text)
+                    print(f"  Entropy: {entropy}")
+                    file_data["Entropy"] = entropy
+
+                if args.classificator:
+                    splitted_words_class = save_text_to_txt(text, 300)
+                    print(f"----- AI Text Classifier ----- ")
+                    data_class = process_file_open_ai(splitted_words_class, "Rus")
+                    file_data.update(data_class)
+                
+                if args.words:
+                    print(f"----- Count Words ----- ")
+                    word_count = count_words(text)
+                    print(f"  Count Words: {word_count}")
+                    file_data["Count Words"] = word_count
+
             
-            if args.roberta_base: 
-                try:
-                    real_score, fake_score = process_text_with_model(text, model_base_path)
-                    result_dict = {
-                        'Roberta Base fake': fake_score,
-                        'Roberta Base real': real_score
-                    }
-                    file_data.update(result_dict)
+            #Тест ЫНГЛИШ
+            if 'en' in args.lang:
+                retry_count = 0
+                max_retries = 50
+                max_len = 1000
+                step = max_len / max_retries
+                while retry_count < max_retries:
+                    try:
+                        chunks = split_text(text, max_len)
+                        translated_chunks = translate_chunks(chunks, 'ru', 'en')
+                        eng_text = join_translated_chunks(translated_chunks)
+                        print(f"Succsess", file=sys.stderr)
+                        break  # Break the retry loop on successful request
+                    except Exception as e:  # Catch the exception and print it
+                        print(f"Error: google trans response bad. Exception: {e}", file=sys.stderr)
+                        print(f"Retry {retry_count}", file=sys.stderr)
+                        retry_count += 1  # Increment the retry count
+                        max_len = max_len - step 
+                        time.sleep(3) 
 
-                    print(f"----- Roberta Base ----- ")
-                    print(f" Roberta Base fake: {fake_score}")
-                    print(f" Roberta Base real: {real_score}")
+                if args.roberta_base: 
+                    try:
+                        real_score, fake_score = process_text_with_model(eng_text, model_base_path)
+                        result_dict = {
+                            'Eng Roberta Base fake': fake_score,
+                            'Eng Roberta Base real': real_score
+                        }
+                        file_data.update(result_dict)
 
-                except:
-                    print("Error BASE")
-            
-            if args.roberta_large: 
-                try:
-                    real_score, fake_score = process_text_with_model(text, model_large_path)
-                    result_dict = {
-                        'Roberta Large fake': fake_score,
-                        'Roberta Large real': real_score
-                    }
-                    file_data.update(result_dict)
+                        print(f"----- Eng Roberta Base ----- ")
+                        print(f" Eng Roberta Base fake: {fake_score}")
+                        print(f" Eng Roberta Base real: {real_score}")
 
-                    print(f"----- Roberta Large ----- ")
-                    print(f" Roberta Large fake: {fake_score}")
-                    print(f" Roberta Large real: {real_score}")
+                    except:
+                        print("Error BASE Eng ")
+                
+                if args.roberta_large: 
+                    try:
+                        real_score, fake_score = process_text_with_model(eng_text, model_large_path)
+                        result_dict = {
+                            'Eng Roberta Large fake': fake_score,
+                            'Eng Roberta Large real': real_score
+                        }
+                        file_data.update(result_dict)
 
-                except:
-                    print("Error LARGE")
+                        print(f"----- Eng Roberta Large ----- ")
+                        print(f" Eng Roberta Large fake: {fake_score}")
+                        print(f" Eng Roberta Large real: {real_score}")
 
-            if args.entropy:
-                print(f"----- Entropy ----- ")
-                entropy = calculate_entropy(text)
-                print(f"  Entropy: {entropy}")
-                file_data["Entropy"] = entropy
+                    except:
+                        print("Error LARGE Eng ")
 
-            if args.classificator:
-                splitted_words_class = save_text_to_txt(text, 300)
-                print(f"----- AI Text Classifier ----- ")
-                data_class = process_file_open_ai(splitted_words_class)
-                file_data.update(data_class)
-             
-            if args.words:
-                print(f"----- Count Words ----- ")
-                word_count = count_words(text)
-                print(f"  Count Words: {word_count}")
-                file_data["Count Words"] = word_count
+                if args.entropy:
+                    print(f"----- Eng Entropy ----- ")
+                    entropy = calculate_entropy(eng_text)
+                    print(f"  Eng Entropy: {entropy}")
+                    file_data["Eng Entropy"] = entropy
 
-
+                if args.classificator:
+                    splitted_words_class = save_text_to_txt(eng_text, 300)
+                    print(f"----- Eng AI Text Classifier ----- ")
+                    data_class = process_file_open_ai(splitted_words_class, "Eng")
+                    file_data.update(data_class)
+                
+                if args.words:
+                    print(f"----- Eng Count Words ----- ")
+                    word_count = count_words(eng_text)
+                    print(f"  Eng Count Words: {word_count}")
+                    file_data["Eng Count Words"] = word_count
 
             json_data.append(file_data)
-#        except:
- #           print(f"Error open file: {file}")
+                
+        except:
+            print(f"Error open file: {file}")
 
-            print("\n\n")
+                
+    print("\n\n")
 
     
     if args.output_json: 
@@ -266,6 +376,7 @@ if __name__ == '__main__':
     parser.add_argument("--output_exel", required=False, type=str, help="output file to TABLE")
     parser.add_argument("-referat", action="store_true", help="Delete TWO FIRST and TWO LAST pages")
     parser.add_argument("target_dir", type=str, help="target dir with .doc(x) files")
+    parser.add_argument('--lang', nargs='+', required=True, help='List of languages to use [ru, en]')
 
     args = parser.parse_args()
     
