@@ -15,7 +15,7 @@ docker build . -t AIAntiPlagiatForDock
 ```
 После успешной сборки запускаем контейнер
 
-``
+```
 docker run -it AIAntiPlagiatForDock /bin/bash
 source venv/bin/activate
 ```
