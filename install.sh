@@ -2,7 +2,7 @@
 # run with sudo
 # Check if virtualenv is installed
 apt update
-apt install -y python3 python3-dev pip libxml2-dev libxslt1-dev antiword unrtf poppler-utils pstotext tesseract-ocr flac ffmpeg lame libmad0 libsox-fmt-mp3 sox libjpeg-dev swig libpulse-dev git vim curl
+apt install -y python3 python3-dev pip libxml2-dev libxslt1-dev antiword unrtf poppler-utils pstotext tesseract-ocr flac ffmpeg lame libmad0 libsox-fmt-mp3 sox libjpeg-dev swig libpulse-dev vim curl
 curl -s https://packagecloud.io/install/repositories/github/git-lfs/script.deb.sh | bash
 apt-get install git-lfs
         
